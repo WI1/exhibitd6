@@ -425,7 +425,7 @@ function exhibit_add_feed($url, $type = 'application/json') {
       break;
     default:
       drupal_add_link(array('rel' => 'exhibit/data', 'href' => $url, 'type' => $type));
-      //drupal_add_link(array('rel' => 'alternate', 'href' => $url, 'type' => $type));
+      drupal_add_link(array('rel' => 'alternate', 'href' => $url, 'type' => $type));
       break;
   }
 }
@@ -514,7 +514,7 @@ function exhibit_get_feeds($key = NULL) {
         $display_options = $view->display[$id]->display_options;
         if ($plugin['handler'] == 'views_plugin_display_feed' && $display_options['style_plugin'] == 'exhibit_json') {
           $view_feed_id = $view->vid . '_' . $id;
-          /*if ($key) {
+          if ($key) {
             switch ($key) {
               case 'fid':
                 $feeds[$view_feed_id] = $view_feed_id;
@@ -544,7 +544,7 @@ function exhibit_get_feeds($key = NULL) {
                 $feeds[$view_feed_id] = variable_get('exhibit_remoteurl_' .  $view_feed_id, variable_set('exhibit_remoteurl_' . $fid, exhibit_get_remote_url($feeds[$view_feed_id]->url)));
                 break;
 	     }
-          } else {*/
+          } else {
             $feeds[$view_feed_id] = (object) array('fid' => $view_feed_id,
                         'viewid' => $view->vid,
                         'module' => 'views',
@@ -556,7 +556,7 @@ function exhibit_get_feeds($key = NULL) {
                         'remoteurl' => variable_get('exhibit_remoteurl_' . $view_feed_id, variable_set('exhibit_remoteurl_' . $view_feed_id, exhibit_get_remote_url($display_options['path']))));
 //                                                  'url' => $display_options['path'],);
 //	    $feeds[$view_feed_id] = (object)array('remoteurl' => variable_get('exhibit_remoteurl_' .  $view_feed_id, variable_set('exhibit_remoteurl_' . $fid, exhibit_get_remote_url($feeds[$view_feed_id]->url))));
-        //  }
+          }
         }
       }
     }
