@@ -1,3 +1,4 @@
+# $Id: general.pot,v 1.1 2009/05/01 05:09:26 arto Exp $
 #
 # LANGUAGE translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>

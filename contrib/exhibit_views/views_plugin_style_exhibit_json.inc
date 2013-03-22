@@ -1,4 +1,5 @@
 <?php
+// $Id: views_plugin_style_exhibit_json.inc,v 1.1 2009/01/08 12:04:48 arto Exp $
 
 //////////////////////////////////////////////////////////////////////////////
 // Views API plugins
@@ -58,7 +59,7 @@ class views_plugin_style_exhibit_json extends views_plugin_style {
   function render() {
     $view_data = views_fetch_data($this->view->base_table);
     $base_field = $view_data['table']['base']['field'];
-
+ 	
     if (empty($this->row_plugin)) {
       vpr('views_plugin_style_exhibit: Missing row plugin');
       return;
@@ -76,6 +77,10 @@ class views_plugin_style_exhibit_json extends views_plugin_style {
       if ($field->options['date_format']) {
         $props[$id]['valueType'] = 'date';
       }
+      // added style numeric to biblio year ###WI1
+      //if ($field->name = 'biblio_year') {
+      //  $props[$id]['valueType'] = 'number';
+      //}
       // Check CCK type fields
       if ($field->content_field && $type = $field->content_field['type']) {
         switch ($type) {
@@ -94,7 +99,8 @@ class views_plugin_style_exhibit_json extends views_plugin_style {
 
     // Gather all rendered items
     $items = array();
-    foreach ($this->view->result as $row) {
+    foreach ($this->view->result as $rowkey => $row) {
+      //Enter all the views field results row wise into item
       $item = $this->row_plugin->render($row);
       // See if we already have values for this item, and merge if so
       if (!empty($items[$row->$base_field])) {
@@ -116,13 +122,43 @@ class views_plugin_style_exhibit_json extends views_plugin_style {
               }
             }
             else {
-              $items[$row->$base_field][$key] = array_merge(array($value), is_array($item[$key]) ? $item[$key] : array($item[$key]));
+              //$items[$row->$base_field][$key] = array_merge(array($value), is_array($item[$key]) ? $item[$key] : array($item[$key]));
+		$newlabel = $row->$base_field;
+	        if ($item['title']) {
+        	  $newlabel = $item['title'];
+        	  if (strlen($item['title']) > 50)
+        	    $newlabel = substr($item['title'], 0, 50) . "...";
+        	}
+        	$items[$row->$base_field] = array_merge(array('id' => $row->$base_field, 'label' => $newlabel, 'type' => $this->view->base_table), $item);
             }
           }
         }
       }
       else {
-        $items[$row->$base_field] = array_merge(array('label' => $row->$base_field, 'type' => $this->view->base_table), $item);
+        // Insert Item into $items after including the type and the label (key). 
+      //  $items[$row->$base_field] = array_merge(array('label' => $row->$base_field, 'type' => $this->view->base_table), $item); 
+      // Replaced it with below option so each row appears once on the map even if node gets repeated, with title as label  
+        if(isset($item['title']))
+          $items[$row->$base_field] = array_merge(array('label' => $item['title']." <span style='display:none'>".$rowkey."</span>", 'type' => $this->view->base_table), $item);
+        else
+          $items[$row->$base_field] = array_merge(array('label' => $row->$base_field, 'type' => $this->view->base_table), $item);
+      }
+      foreach ($items[$row->$base_field] as $key => $value) 
+      {
+       // if (!empty($key) && strlen($key)>=3 && substr($key,0,3)=='tid') {
+        if (!empty($key) && strlen($key)>=3 && (substr($key,0,3)=='tid' || substr($key,-3,3)=='nid')) { 
+	 // broads_debug_to_syslog("$key = $value"); 
+          // broads_debug_to_syslog(substr($key,0,3));
+          foreach($items[$row->$base_field][$key] as $id => $item){
+            //broads_debug_to_syslog($id, "id");
+            //broads_debug_to_syslog($item, "Item");
+            if(is_array($items[$row->$base_field][$key][$id])){
+              $items[$row->$base_field][$key][$id] =
+              $items[$row->$base_field][$key][$id]['name'];
+              //broads_debug_to_syslog($items[$row->$base_field][$key][$id], "Name");
+            }
+          }
+        }
       }
     }
 

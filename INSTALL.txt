@@ -1,3 +1,4 @@
+// $Id: INSTALL.txt,v 1.5 2009/01/08 12:04:47 arto Exp $
 
 NOTE: This is experimental software meant for advanced users; assume nothing
 works, and you may be pleasantly surprised. And when it breaks, you get to

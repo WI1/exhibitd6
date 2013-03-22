@@ -1,4 +1,5 @@
 <?php
+// $Id: exhibit.admin.inc,v 1.7 2009/05/01 05:09:27 arto Exp $
 
 //////////////////////////////////////////////////////////////////////////////
 // Exhibit API functions
@@ -109,20 +110,16 @@ function exhibit_admin_feed_form_validate($form, &$form_state) {
   // TODO: check for duplicate titles and URLs.
 }
 
-  
 function exhibit_admin_feed_form_submit($form, &$form_state) {
-  // Creates variables from array values: $module, $title, $type, $url
   extract($form_state['values'], EXTR_SKIP | EXTR_REFS);
-  // Gets the remote url of the exhibit webservice
-  $remoteurl = exhibit_get_remote_url($url);
-  
+
   if (empty($fid)) {
-    db_query("INSERT INTO {exhibit_feeds} (fid, module, title, type, url, remoteurl) VALUES (NULL, '%s', '%s', '%s', '%s, '%s'')", $module, $title, $type, $url, $remoteurl);
+    db_query("INSERT INTO {exhibit_feeds} (fid, module, title, type, url) VALUES (NULL, '%s', '%s', '%s', '%s')", $module, $title, $type, $url);
     watchdog('exhibit', 'Data feed %title created.', array('%title' => $title), WATCHDOG_NOTICE, l(t('view'), 'admin/content/exhibit'));
     drupal_set_message(t('The data feed %title has been created.', array('%title' => $title)));
   }
   else {
-    db_query("UPDATE {exhibit_feeds} SET title = '%s', type = '%s', url = '%s', remoteurl = '%s' WHERE fid = %d", $title, $type, $url, $remoteurl, $fid);
+    db_query("UPDATE {exhibit_feeds} SET title = '%s', type = '%s', url = '%s' WHERE fid = %d", $title, $type, $url, $fid);
     watchdog('exhibit', 'Data feed %title updated.', array('%title' => $title), WATCHDOG_NOTICE, l(t('view'), 'admin/content/exhibit'));
     drupal_set_message(t('The data feed %title has been updated.', array('%title' => $title)));
   }

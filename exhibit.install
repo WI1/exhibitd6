@@ -1,4 +1,5 @@
 <?php
+// $Id: exhibit.install,v 1.3 2008/07/17 11:51:06 arto Exp $
 
 //////////////////////////////////////////////////////////////////////////////
 // Core API hooks
@@ -82,10 +83,6 @@ function exhibit_schema() {
           'description' => t("The data feed's URL."),
           'type' => 'text',
         ),
-	'remoteurl' => array(
-          'description' => t("The data feed's Remote URL."),
-          'type' => 'text',
-        ),
       ),
       'primary key' => array('fid'),
     ),
@@ -141,14 +138,4 @@ function exhibit_update_6001() {
     )
   );
   return array();
-}
-
-function exhibit_update_6002() {
-  db_add_field($ret, 'exhibit_feeds',
-    'remoteurl',
-    array(
-      'description' => t("The data feed's Remote URL."),
-      'type' => 'text',
-    )
-  );
 }

@@ -1,22 +1,19 @@
 <?php
+// $Id: exhibit.module,v 1.10 2009/05/01 05:09:27 arto Exp $
 
 //////////////////////////////////////////////////////////////////////////////
 // Module settings
 
-define('EXHIBIT_DATE_FORMAT', '%Y-%m-%dT%H:%M:%SZ');
-define('EXHIBIT_XMLNS_URL', 'http://simile.mit.edu/2006/11/exhibit#'); // TODO: What's this for? This needs to be updated or removed
-//define('EXHIBIT_JS_URL', variable_get('exhibit_js_url', 'http://localhost/exhibit3/scripted/src/exhibit-api.js'));
-define('EXHIBIT_JS_URL', variable_get('exhibit_js_url', 'http://131.188.76.40:8181/backstage/exhibit/api/exhibit-api.js?autoCreate=false&postLoad=true&js=http://131.188.76.40:8181/backstage/api/backstage-api.js'));
-//define('EXHIBIT_JS_URL', variable_get('exhibit_js_url', 'http://localhost/exhibit3/scripted/src/exhibit-api.js?autoCreate=false&postLoad=true&js=http://localhost:8181/backstage/api/backstage-api.js'));
-//define('EXHIBIT_JS_URL', variable_get('exhibit_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/exhibit-api.js'));
-define('EXHIBIT_WEBSERVICE_URL', variable_get('exhibit_webservice_url', 'http://131.188.76.40:8181/backstage'));
-define('EXHIBIT_MAP_JS_URL', variable_get('exhibit_map_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/map/map-extension.js'));
-define('EXHIBIT_BARCHART_JS_URL', variable_get('exhibit_barchart_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/chart/chart-extension.js'));
+define('EXHIBIT_DATE_FORMAT',        '%Y-%m-%dT%H:%M:%SZ');
+define('EXHIBIT_XMLNS_URL',          'http://simile.mit.edu/2006/11/exhibit#');  // TODO:  What's this for? This needs to be updated or removed
+define('EXHIBIT_JS_URL',             variable_get('exhibit_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/exhibit-api.js'));
+define('EXHIBIT_MAP_JS_URL',         variable_get('exhibit_map_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/map/map-extension.js'));
+define('EXHIBIT_BARCHART_JS_URL',    variable_get('exhibit_barchart_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/chart/chart-extension.js'));
 define('EXHIBIT_SCATTERPLOT_JS_URL', variable_get('exhibit_scatterplot_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/chart/chart-extension.js'));
-define('EXHIBIT_TIMELINE_JS_URL', variable_get('exhibit_timeline_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/time/time-extension.js'));
-define('EXHIBIT_CALENDAR_JS_URL', variable_get('exhibit_calendar_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/calendar/calendar-extension.js'));
-define('EXHIBIT_FEED_LIFETIME', (int) variable_get('timeline_feed_lifetime', 0));
-define('EXHIBIT_FEED_ETAG', (bool) variable_get('timeline_feed_etag', TRUE));
+define('EXHIBIT_TIMELINE_JS_URL',    variable_get('exhibit_timeline_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/time/time-extension.js'));
+define('EXHIBIT_CALENDAR_JS_URL',    variable_get('exhibit_calendar_js_url', 'http://api.simile-widgets.org/exhibit/2.2.0/extensions/calendar/calendar-extension.js'));
+define('EXHIBIT_FEED_LIFETIME',      (int)variable_get('timeline_feed_lifetime', 0));
+define('EXHIBIT_FEED_ETAG',          (bool)variable_get('timeline_feed_etag', TRUE));
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -143,8 +140,7 @@ function exhibit_block($op = 'list', $delta = 0, $edit = array()) {
         case 'facets':
           if (arg(0) == 'node' && is_numeric(arg(1)) && arg(2) != 'edit') {
             $node = node_load(arg(1));
-	    $node->exhibit = array();
-	    $block['content'] = $node->exhibit['facet_definition'];
+            $block['content'] = $node->exhibit['facet_definition'];
           }
           break;
       }
@@ -249,20 +245,6 @@ function exhibit_nodeapi(&$node, $op, $teaser, $page) {
     case 'delete revision':
       db_query('DELETE FROM {exhibit_nodes} WHERE vid = %d', $node->vid);
       break;
-    case 'insert':
-      // check if any new node within the system is part of an exhibit and resend the feed data to the exhibit3 webservice
-      if (module_exists('background_process')) {
-        $handle = background_process_start(array(exhibit_update_feed($node->nid)));
-      }
-      break;
-    case 'update':
-      // check if any updated node within the system is part of an exhibit and resend the feed data to the exhibit3 webservice
-      if (module_exists('background_process')) {
-    //      $handle = background_process_start(array(exhibit_update_feed($node->nid)));
-          $handle = background_process_start(exhibit_update_feed, $node->nid);
-        
-      }
-     break;
   }
 }
 
@@ -303,7 +285,6 @@ function exhibit_form(&$node, &$param) {
  * Implementation of hook_view().
  */
 function exhibit_view($node, $teaser = FALSE, $page = FALSE) {
-  if ($node->type == 'exhibit') {
   // Load the SIMILE Exhibit API and any enabled extensions
   drupal_set_html_head('<script type="text/javascript" src="'. EXHIBIT_JS_URL .'"></script>'."\n");
 
@@ -317,14 +298,13 @@ function exhibit_view($node, $teaser = FALSE, $page = FALSE) {
   // Insert <LINK> references to all enabled data feeds
   foreach ($node->exhibit['feeds'] as $fid) {
     if ($feed = exhibit_feed_load($fid)) {
-      exhibit_add_feed($feed['remoteurl'], check_plain($feed['type']));
+      exhibit_add_feed(exhibit_get_feed_url($feed), check_plain($feed['type']));
     }
   }
 
   $node = node_prepare($node, $teaser);
   $node->content['exhibit'] = array('#value' => $node->exhibit['definition'], '#weight' => 1);
   return $node;
-  }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -425,7 +405,6 @@ function exhibit_add_feed($url, $type = 'application/json') {
       break;
     default:
       drupal_add_link(array('rel' => 'exhibit/data', 'href' => $url, 'type' => $type));
-      drupal_add_link(array('rel' => 'alternate', 'href' => $url, 'type' => $type));
       break;
   }
 }
@@ -433,7 +412,8 @@ function exhibit_add_feed($url, $type = 'application/json') {
 function exhibit_feed_load($fid) {
   if (is_numeric($fid)) {
     return db_fetch_array(db_query('SELECT f.* FROM {exhibit_feeds} f WHERE f.fid = %d', $fid));
-  } else {
+  }
+  else {
     if (module_exists('views')) {
       $views = views_get_all_views();
       foreach ($views as $view) {
@@ -449,45 +429,17 @@ function exhibit_feed_load($fid) {
           if ($plugin['handler'] == 'views_plugin_display_feed' && $display_options['style_plugin'] == 'exhibit_json') {
             $view_feed_id = $view->vid . '_' . $id;
             if ($view_feed_id == $fid) {
-              $feed = array('fid' => $view_feed_id,
-                  'viewid' => $view->vid,
-                  'module' => 'views',
-                  'title' => $view->name . ': ' . $view->display[$id]->display_title,
-                  'enabled' => TRUE,
-                  'cache' => FALSE,
-                  'type' => 'application/json',
-                  'url' => $display_options['path'],);
-        //      dpm(variable_get('exhibit_remoteurl_' . $view_feed_id, '#'));
-              $remoteurl = variable_get('exhibit_remoteurl_' . $view_feed_id, '#');
-              if ($remoteurl == '#') {
-                variable_set('exhibit_remoteurl_' . $view_feed_id, exhibit_get_remote_url($feed['url']));
-                $remoteurl = variable_get('exhibit_remoteurl_' . $view_feed_id, '#');
-              }
-              $feed['remoteurl'] = $remoteurl;
-          //    dpm($feed['remoteurl']);
-              return $feed;
+              return array('fid' => $view_feed_id,
+                            'module' => 'views',
+                            'title' => $view->name . ': ' . $view->display[$id]->display_title,
+                            'enabled' => TRUE,
+                            'cache' => FALSE,
+                            'type' => 'application/json',
+                            'url' => $display_options['path']);
             }
           }
         }
       }
-    }
-  }
-}
-
-function exhibit_update_feed($nid) {
-  $feeds = exhibit_get_feeds();
-  
-  foreach ($feeds as $feed) {
-    if ($feed->enabled && module_exists('views') && isset($feed->viewid)) {
-      $results = views_get_view_result($feed->viewid);
-      foreach ($results as $result) {
-        if ($result->nid == $nid) {
-          variable_set('exhibit_remoteurl_' . $feed->fid, exhibit_get_remote_url($feed->url));
-          variable_set('feed_last_updated', time());
-          break;
-        }
-      }
-     
     }
   }
 }
@@ -498,8 +450,8 @@ function exhibit_get_feeds($key = NULL) {
   while ($feed = db_fetch_object($result)) {
     $feeds[$feed->fid] = $key ? $feed->$key : $feed;
   }
-  
-  // Check for Exhibit JSON feeds in views and add automatically add them to the list
+
+  // Check for Exhibit JSON feeds in views and add automaticall add them to the list
   if (module_exists('views')) {
     $views = views_get_all_views();
     foreach ($views as $view) {
@@ -519,9 +471,6 @@ function exhibit_get_feeds($key = NULL) {
               case 'fid':
                 $feeds[$view_feed_id] = $view_feed_id;
                 break;
-	      case 'viewid':
-	        $feeds[$view_feed_id] = $view->vid;
-		break;
               case 'module':
                 $feeds[$view_feed_id] = 'views';
                 break;
@@ -540,22 +489,16 @@ function exhibit_get_feeds($key = NULL) {
               case 'url':
                 $feeds[$view_feed_id] = $display_options['path'];
                 break;
-	      case 'remoteurl':
-                $feeds[$view_feed_id] = variable_get('exhibit_remoteurl_' .  $view_feed_id, variable_set('exhibit_remoteurl_' . $fid, exhibit_get_remote_url($feeds[$view_feed_id]->url)));
-                break;
-	     }
-          } else {
-            $feeds[$view_feed_id] = (object) array('fid' => $view_feed_id,
-                        'viewid' => $view->vid,
-                        'module' => 'views',
-                        'title' => l($view->name . ': ' . $view->display[$id]->display_title, 'admin/build/views/edit/' . $view->name),
-                        'enabled' => TRUE,
-                        'cache' => FALSE,
-                        'type' => 'application/json',
-                        'url' => $display_options['path'],
-                        'remoteurl' => variable_get('exhibit_remoteurl_' . $view_feed_id, variable_set('exhibit_remoteurl_' . $view_feed_id, exhibit_get_remote_url($display_options['path']))));
-//                                                  'url' => $display_options['path'],);
-//	    $feeds[$view_feed_id] = (object)array('remoteurl' => variable_get('exhibit_remoteurl_' .  $view_feed_id, variable_set('exhibit_remoteurl_' . $fid, exhibit_get_remote_url($feeds[$view_feed_id]->url))));
+            }
+          }
+          else {
+            $feeds[$view_feed_id] = (object)array('fid' => $view_feed_id,
+                                                  'module' => 'views',
+                                                  'title' => l($view->name . ': ' . $view->display[$id]->display_title, 'admin/build/views/edit/' . $view->name),
+                                                  'enabled' => TRUE,
+                                                  'cache' => FALSE,
+                                                  'type' => 'application/json',
+                                                  'url' => $display_options['path']);
           }
         }
       }
@@ -565,47 +508,9 @@ function exhibit_get_feeds($key = NULL) {
   return $feeds;
 }
 
-function exhibit_get_remote_url($url) {
-  // Dummy setting until admin function ist ready
-  $backstage = TRUE;
-  if ($backstage == TRUE) {
-    //$url = url($feed->url, array('absolute' => TRUE));
-    // loads static file from locahost due to exhibit domain restriction
-    //$url = 'http://localhost/testexhibit';
-    $url = 'http://' . $_SERVER['HTTP_HOST'] . '/' . $url;
-    if ($url) {
-      $data = drupal_http_request($url, array('method' => 'GET'));
-      $webservice = EXHIBIT_WEBSERVICE_URL . '/data/mem';
-      // Check if service is available
-      $headers = array(
-          'content-type' => 'application/json',
-          //'connection' => 'keep-alive',
-          );
-      $method = 'POST';
-      $retry = 3;
-      $timeout = 60.0; 
-      $response = drupal_http_request($webservice, $headers, $method, $data->data, $retry, $timeout); // create a new Object for an http_request
-      if ($response) {
-        switch($response->code) {
-          case 201:
-            $url = $response->headers['Location'];
-            break;
-          case 500:
-            drupal_set_message('Server Error');
-            break;
-          default:
-            drupal_set_message('Some Error');
-            break;
-        }
-      }
-    }
-    dpm($url);
-    return $url;
-  }
-  // else {
-  //  if 
- //   return exhibit_get_url(!empty($feed->cache) ? 'exhibit/feeds/' . $feed->fid : $feed->url);
- // }
+function exhibit_get_feed_url($feed) {
+  $feed = (object)$feed;
+  return exhibit_get_url(!empty($feed->cache) ? 'exhibit/feeds/' . $feed->fid : $feed->url);
 }
 
 function exhibit_get_feed_contents($url) {

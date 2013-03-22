@@ -1,4 +1,5 @@
 <?php
+// $Id: views_plugin_row_fields_exhibit.inc,v 1.4 2009/05/01 05:09:26 arto Exp $
 
 //////////////////////////////////////////////////////////////////////////////
 // Views API plugins

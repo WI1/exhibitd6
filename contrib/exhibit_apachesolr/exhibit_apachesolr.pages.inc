@@ -1,4 +1,5 @@
 <?php
+// $Id: exhibit_apachesolr.pages.inc,v 1.1 2009/01/28 22:32:54 arto Exp $
 
 /**
  * Get search results
