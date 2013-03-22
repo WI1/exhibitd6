@@ -139,7 +139,8 @@ class views_plugin_style_exhibit_json extends views_plugin_style {
       //  $items[$row->$base_field] = array_merge(array('label' => $row->$base_field, 'type' => $this->view->base_table), $item); 
       // Replaced it with below option so each row appears once on the map even if node gets repeated, with title as label  
         if(isset($item['title']))
-          $items[$row->$base_field] = array_merge(array('label' => $item['title']." <span style='display:none'>".$rowkey."</span>", 'type' => $this->view->base_table), $item);
+          //$items[$row->$base_field] = array_merge(array('label' => $item['title']." <span style='display:none'>".$rowkey."</span>", 'type' => $this->view->base_table), $item);
+          $items[$row->$base_field] = array_merge(array('label' => $item['title'], 'id' => $rowkey, 'type' => $this->view->base_table), $item);
         else
           $items[$row->$base_field] = array_merge(array('label' => $row->$base_field, 'type' => $this->view->base_table), $item);
       }
